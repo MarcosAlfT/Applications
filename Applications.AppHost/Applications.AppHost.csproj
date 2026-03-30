@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.5.0" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>c0271d32-8ce5-4678-a233-0a377adcf7e3</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.0" />
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.2.0" />
+    <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PagArte\Pagarte.API\Pagarte.API.csproj" />
+    <ProjectReference Include="..\PagArte\Pagarte.Worker\Pagarte.Worker.csproj" />
+    <ProjectReference Include="..\Shared\Clients\Clients.API.csproj" />
+    <ProjectReference Include="..\Shared\IdentityService\IdentityService.csproj" />
+  </ItemGroup>
+
+</Project>
