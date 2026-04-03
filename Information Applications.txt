@@ -1,0 +1,30 @@
+-----------------------------------
+--------    C# Application --------
+-----------------------------------
+
+
+Entity Framewotk
+----------------
+
+Migrations:
+-----------
+
+-- Create a migration
+Add-Migration InitialCreate -Project Clients.API -StartupProject Clients.API
+
+-- This rolls back all migrations from the database.
+Update-Database 0 -Project Clients.API -StartupProject Clients.API
+
+-- Remove migration
+Remove-Migration -Project Clients.API -StartupProject Clients.API
+
+
+OpenApi json
+------------
+
+https://localhost:7223/swagger/v1/swagger.json
+
+
+Postman
+-------
+Postman → Import → paste https://localhost:7223/swagger/v1/swagger.json
