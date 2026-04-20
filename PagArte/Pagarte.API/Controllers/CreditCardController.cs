@@ -1,55 +1,92 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Pagarte.API.DTOs.Requests;
-using Pagarte.API.Interfaces;
+using Pagarte.API.DTOs;
+using Pagarte.API.GrpcClients;
+using Infrastructure.Responses;
 
 namespace Pagarte.API.Controllers
 {
-    [ApiController]
-    [Authorize]
-    [Route("api/creditcard")]
-    public class CreditCardController(ICreditCardService creditCardService) : BaseController
-    {
-        private readonly ICreditCardService _creditCardService = creditCardService;
+	[ApiController]
+	[Authorize]
+	[Route("api/creditcard")]
+	public class CreditCardController(CreditCardGrpcClient grpcClient) : BaseController
+	{
+		private readonly CreditCardGrpcClient _grpcClient = grpcClient;
 
-        [HttpGet]
-        public async Task<IActionResult> GetAsync()
-        {
-            var validation = ValidateClientId();
-            if (validation != null) return validation;
+		[HttpGet]
+		public async Task<IActionResult> GetAsync()
+		{
+			var validation = ValidateClientId();
+			if (validation != null) return validation;
 
-            var response = await _creditCardService.GetByClientIdAsync(GetClientId()!);
-            return Ok(response);
-        }
+			var result = await _grpcClient.GetCardsAsync(GetClientId()!);
+			return Ok(ApiResponse<object>.CreateSuccess(result.Cards));
+		}
 
-        [HttpPost]
-        public async Task<IActionResult> RegisterAsync([FromBody] RegisterCreditCardRequest request)
-        {
-            var validation = ValidateClientId();
-            if (validation != null) return validation;
+		[HttpGet("{cardId}")]
+		public async Task<IActionResult> GetByIdAsync(string cardId)
+		{
+			var validation = ValidateClientId();
+			if (validation != null) return validation;
 
-            var response = await _creditCardService.RegisterAsync(GetClientId()!, request);
-            return Ok(response);
-        }
+			var result = await _grpcClient.GetCardAsync(cardId, GetClientId()!);
+			if (!result.Found)
+				return Ok(ApiResponse.CreateFailure("Credit card not found."));
 
-        [HttpPut("{cardId}")]
-        public async Task<IActionResult> UpdateAsync(Guid cardId, [FromBody] UpdateCreditCardRequest request)
-        {
-            var validation = ValidateClientId();
-            if (validation != null) return validation;
+			return Ok(ApiResponse<object>.CreateSuccess(result.Card));
+		}
 
-            var response = await _creditCardService.UpdateAsync(GetClientId()!, cardId, request);
-            return Ok(response);
-        }
+		[HttpPost]
+		public async Task<IActionResult> RegisterAsync(
+			[FromBody] RegisterCreditCardRequest request)
+		{
+			var validation = ValidateClientId();
+			if (validation != null) return validation;
 
-        [HttpDelete("{cardId}")]
-        public async Task<IActionResult> DeleteAsync(Guid cardId)
-        {
-            var validation = ValidateClientId();
-            if (validation != null) return validation;
+			var result = await _grpcClient.RegisterCardAsync(
+				GetClientId()!, request.EncryptedCardData,
+				request.CardHolderName, request.IsDefault);
 
-            var response = await _creditCardService.DeleteAsync(GetClientId()!, cardId);
-            return Ok(response);
-        }
-    }
+			if (!result.Success)
+				return Ok(ApiResponse.CreateFailure(result.ErrorMessage));
+
+			return Ok(ApiResponse<object>.CreateSuccess(new
+			{
+				result.CardId,
+				result.Last4Digits,
+				result.CardType
+			}, "Card registered successfully."));
+		}
+
+		[HttpPut("{cardId}")]
+		public async Task<IActionResult> UpdateAsync(string cardId,
+			[FromBody] UpdateCreditCardRequest request)
+		{
+			var validation = ValidateClientId();
+			if (validation != null) return validation;
+
+			var result = await _grpcClient.UpdateCardAsync(
+				cardId, GetClientId()!,
+				request.CardHolderName, request.IsDefault);
+
+			if (!result.Success)
+				return Ok(ApiResponse.CreateFailure(result.ErrorMessage));
+
+			return Ok(ApiResponse.CreateSuccess("Card updated successfully."));
+		}
+
+		[HttpDelete("{cardId}")]
+		public async Task<IActionResult> DeleteAsync(string cardId)
+		{
+			var validation = ValidateClientId();
+			if (validation != null) return validation;
+
+			var result = await _grpcClient.DeleteCardAsync(cardId, GetClientId()!);
+
+			if (!result.Success)
+				return Ok(ApiResponse.CreateFailure(result.ErrorMessage));
+
+			return Ok(ApiResponse.CreateSuccess("Card deleted successfully."));
+		}
+	}
 }

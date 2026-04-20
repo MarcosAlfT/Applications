@@ -1,45 +1,70 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Pagarte.API.DTOs.Requests;
-using Pagarte.API.Interfaces;
+using Pagarte.API.GrpcClients;
+using Pagarte.API.DTOs;
+using Infrastructure.Responses;
 
 namespace Pagarte.API.Controllers
 {
-    [ApiController]
-    [Authorize]
-    [Route("api/payment")]
-    public class PaymentController(IPaymentService paymentService) : BaseController
-    {
-        private readonly IPaymentService _paymentService = paymentService;
+	[ApiController]
+	[Authorize]
+	[Route("api/payment")]
+	public class PaymentController(PaymentGrpcClient grpcClient) : BaseController
+	{
+		private readonly PaymentGrpcClient _grpcClient = grpcClient;
 
-        [HttpGet]
-        public async Task<IActionResult> GetAsync()
-        {
-            var validation = ValidateClientId();
-            if (validation != null) return validation;
+		[HttpGet]
+		public async Task<IActionResult> GetHistoryAsync(
+			[FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+		{
+			var validation = ValidateClientId();
+			if (validation != null) return validation;
 
-            var response = await _paymentService.GetByClientIdAsync(GetClientId()!);
-            return Ok(response);
-        }
+			var result = await _grpcClient.GetPaymentHistoryAsync(
+				GetClientId()!, page, pageSize);
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetByIdAsync(Guid id)
-        {
-            var validation = ValidateClientId();
-            if (validation != null) return validation;
+			return Ok(ApiResponse<object>.CreateSuccess(new
+			{
+				result.Payments,
+				result.Total,
+				Page = page,
+				PageSize = pageSize
+			}));
+		}
 
-            var response = await _paymentService.GetByIdAsync(id, GetClientId()!);
-            return Ok(response);
-        }
+		[HttpGet("{paymentId}")]
+		public async Task<IActionResult> GetByIdAsync(string paymentId)
+		{
+			var validation = ValidateClientId();
+			if (validation != null) return validation;
 
-        [HttpPost]
-        public async Task<IActionResult> ProcessAsync([FromBody] ProcessPaymentRequest request)
-        {
-            var validation = ValidateClientId();
-            if (validation != null) return validation;
+			var result = await _grpcClient.GetPaymentAsync(paymentId, GetClientId()!);
+			if (!result.Found)
+				return Ok(ApiResponse.CreateFailure("Payment not found."));
 
-            var response = await _paymentService.ProcessPaymentAsync(GetClientId()!, request);
-            return Ok(response);
-        }
-    }
+			return Ok(ApiResponse<object>.CreateSuccess(result.Payment));
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> ProcessAsync(
+			[FromBody] ProcessPaymentRequest request)
+		{
+			var validation = ValidateClientId();
+			if (validation != null) return validation;
+
+			var result = await _grpcClient.ProcessPaymentAsync(
+				GetClientId()!, request.CreditCardId,
+				request.ServiceId, request.Currency);
+
+			if (!result.Success)
+				return Ok(ApiResponse.CreateFailure(result.ErrorMessage));
+
+			return Ok(ApiResponse<object>.CreateSuccess(new
+			{
+				result.PaymentId,
+				result.Reference,
+				result.Status
+			}, "Payment initiated successfully."));
+		}
+	}
 }

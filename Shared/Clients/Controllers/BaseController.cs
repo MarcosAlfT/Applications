@@ -1,7 +1,7 @@
 ﻿using Clients.API.Constants;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
-using Shared.Responses;
+using Infrastructure.Responses;
 
 namespace Clients.API.Controllers
 {

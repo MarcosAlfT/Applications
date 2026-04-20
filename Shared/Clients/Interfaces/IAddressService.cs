@@ -1,4 +1,4 @@
-﻿using Shared.Responses;
+﻿using Infrastructure.Responses;
 using Clients.API.DTOs.Responses;
 
 namespace Clients.API.Interfaces

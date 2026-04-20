@@ -11,8 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.0" />
-    <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.2.0" />
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="13.2.2" />
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.2.2" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
   </ItemGroup>
 

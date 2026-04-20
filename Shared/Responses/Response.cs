@@ -1,4 +1,4 @@
-﻿namespace Shared.Responses
+﻿namespace Infrastructure.Responses
 {
 	/// <summary>
 	/// The base for all API responses, indicating success and a message.

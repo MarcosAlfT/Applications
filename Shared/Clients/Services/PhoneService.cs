@@ -2,7 +2,7 @@
 using Clients.API.Domain;
 using Clients.API.Domain.Entities;
 using Clients.API.Interfaces;
-using Shared.Responses;
+using Infrastructure.Responses;
 using Clients.API.DTOs.Responses;
 using Mapster;
 
