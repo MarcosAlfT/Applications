@@ -1,6 +1,6 @@
 ﻿using Clients.API.Domain;
 using Clients.API.DTOs.Responses;
-using Shared.Responses;
+using Infrastructure.Responses;
 
 namespace Clients.API.Interfaces
 {

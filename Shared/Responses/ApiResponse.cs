@@ -1,4 +1,4 @@
-﻿namespace Shared.Responses
+﻿namespace Infrastructure.Responses
 {
 	/// <summary>
 	/// Represents a standard API response envelope with a data payload.

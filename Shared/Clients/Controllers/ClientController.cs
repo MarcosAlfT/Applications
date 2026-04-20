@@ -2,7 +2,7 @@
 using Clients.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Responses;
+using Infrastructure.Responses;
 
 namespace Clients.API.Controllers
 {

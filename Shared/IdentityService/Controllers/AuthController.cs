@@ -1,5 +1,5 @@
 ﻿using FluentResults;
-using Shared.Responses;
+using Infrastructure.Responses;
 using IdentityService.Dtos.Auth;
 using IdentityService.Interfaces;
 using Microsoft.AspNetCore;
