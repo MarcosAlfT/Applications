@@ -4,7 +4,12 @@ var builder = DistributedApplication.CreateBuilder(args);
 var rabbitUser = builder.AddParameter("rabbit-user", secret: false);
 var rabbitPassword = builder.AddParameter("rabbit-pass", secret: true);
 var rabbitmq = builder.AddRabbitMQ("PagQueue", rabbitUser, rabbitPassword)
-	.WithManagementPlugin();  // enables RabbitMQ management UI
+	.WithManagementPlugin()		// enables RabbitMQ management UI
+	.WithEndpoint("amqp", e =>
+	{
+		e.Port = 5672;
+		e.TargetPort = 5672;
+	});
 
 
 

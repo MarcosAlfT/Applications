@@ -27,25 +27,27 @@ namespace Pagarte.Engine
                     // Email service
                     services.AddScoped<IEmailSenderService, EmailSenderService>();
 
-                    // RabbitMQ
-                    services.AddSingleton(new RabbitMQConnectionFactory(
-                        configuration["RabbitMQ:Host"] ?? "localhost",
-                        configuration.GetValue<int>("RabbitMQ:Port"),
-                        configuration["RabbitMQ:Username"] ?? "guest",
-                        configuration["RabbitMQ:Password"] ?? "guest"));
-                    services.AddSingleton<IMessagePublisher, RabbitMQPublisher>();
+					// RabbitMQ
+					services.AddSingleton<RabbitMQConnectionFactory>(sp =>
+					{
+						var config = sp.GetRequiredService<IConfiguration>();
+						var connectionString = config.GetConnectionString("PagQueue");
+						Console.WriteLine($"connString: {connectionString}");
 
-                    // Consumers — each listens to one queue, that's it
-                    services.AddHostedService<PaymentRequestConsumer>();
+						return new RabbitMQConnectionFactory(connectionString!);
+					});
+
+					// Consumers — each listens to one queue, that's it
+					services.AddHostedService<PaymentRequestConsumer>();
                     services.AddHostedService<RefundConsumer>();
                     services.AddHostedService<EmailConsumer>();
                 })
                 .Build();
 
-            //var host = builder.Build();
+			//var host = builder.Build();
 
-            // Declare RabbitMQ topology on startup
-            var rabbitFactory = host.Services.GetRequiredService<RabbitMQConnectionFactory>();
+			// Declare RabbitMQ topology on startup
+			var rabbitFactory = host.Services.GetRequiredService<RabbitMQConnectionFactory>();
 
             var connection = await rabbitFactory.GetConnectionAsync();
             var channel = await connection.CreateChannelAsync();

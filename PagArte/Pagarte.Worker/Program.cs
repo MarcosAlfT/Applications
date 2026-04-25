@@ -25,25 +25,23 @@ namespace Pagarte.Worker
 			builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 			builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
 			builder.Services.AddScoped<IFeeConfigurationRepository, FeeConfigurationRepository>();
+			builder.Services.AddScoped<IMessagePublisher, RabbitMQPublisher>();
 
 			// External connections (dLocal, Companies) with Polly resilience
 			builder.Services.AddPagarteConnections(configuration);
 
-			// RabbitMQ publisher — Worker publishes after sync operations
-			//------------------------------------------------------------
-			// This is to use RabbitMQ directly without going through an abstraction layer
-			//builder.Services.AddSingleton(new RabbitMQConnectionFactory(
-			//	configuration["RabbitMQ:Host"] ?? "localhost",
-			//	configuration.GetValue<int>("RabbitMQ:Port"),
-			//	configuration["RabbitMQ:Username"] ?? "guest",
-			//	configuration["RabbitMQ:Password"] ?? "guest"));
-			//builder.Services.AddSingleton<IMessagePublisher, RabbitMQPublisher>();
-
 			builder.Services.AddSingleton<RabbitMQConnectionFactory>(sp =>
 			{
 				var config = sp.GetRequiredService<IConfiguration>();
-				var connectionString = config.GetConnectionString("PagQueue");
+				var connectionString = 
+					config.GetConnectionString("PagQueue") ??
+					config["ConnectionStrings:PagQueue"] ??
+					config["RABBITMQ_CONNECTION_STRING"];
+			
 				Console.WriteLine($"connString: {connectionString}");
+
+				if (string.IsNullOrWhiteSpace(connectionString))
+					throw new Exception("RabbitMQ connection string not found");
 
 				return new RabbitMQConnectionFactory(connectionString!);
 			});
