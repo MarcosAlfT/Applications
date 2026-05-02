@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 using Pagarte.Worker.Domain.Entities;
+=======
+﻿using Pagarte.Worker.Domain.Entities;
+>>>>>>> origin/main
 using System;
 using System.Collections.Generic;
 using System.Linq;

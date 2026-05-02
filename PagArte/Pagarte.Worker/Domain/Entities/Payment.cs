@@ -8,7 +8,11 @@ namespace Pagarte.Worker.Domain.Entities
 		public string ClientId { get; set; } = string.Empty;
 		public Guid CreditCardId { get; set; }
 		public Guid ServiceId { get; set; }
+<<<<<<< HEAD
 		public string? OperatorPaymentId { get; set; }
+=======
+		public string? DLocalPaymentId { get; set; }
+>>>>>>> origin/main
 		public string? CompanyReference { get; set; }
 		public TransactionStatus Status { get; set; } = TransactionStatus.Pending;
 		public string Currency { get; set; } = string.Empty;
@@ -55,9 +59,15 @@ namespace Pagarte.Worker.Domain.Entities
 			}
 		}
 
+<<<<<<< HEAD
 		public void SetOperatorPaymentId(string operatorPaymentId)
 		{
 			OperatorPaymentId = operatorPaymentId;
+=======
+		public void SetDLocalPaymentId(string dLocalPaymentId)
+		{
+			DLocalPaymentId = dLocalPaymentId;
+>>>>>>> origin/main
 			LastUpdatedAt = DateTime.UtcNow;
 		}
 

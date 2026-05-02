@@ -26,12 +26,18 @@ message GetCardResponse {
 
 message RegisterCardRequest {
   string client_id = 1;
+<<<<<<< HEAD
   string card_number = 2;
   string cvv = 3;
   string card_holder_name = 4;
   bool is_default = 5;
   int32 expiry_month = 6;
   int32 expiry_year = 7;
+=======
+  string encrypted_card_data = 2;
+  string card_holder_name = 3;
+  bool is_default = 4;
+>>>>>>> origin/main
 }
 message RegisterCardResponse {
   bool success = 1;
@@ -39,8 +45,11 @@ message RegisterCardResponse {
   string last4_digits = 3;
   string card_type = 4;
   string error_message = 5;
+<<<<<<< HEAD
   int32 expiry_month = 6;
   int32 expiry_year = 7;
+=======
+>>>>>>> origin/main
 }
 
 message UpdateCardRequest {

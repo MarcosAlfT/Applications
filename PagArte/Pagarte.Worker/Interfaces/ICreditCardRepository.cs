@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 using Pagarte.Worker.Domain.Entities;
+=======
+﻿using Pagarte.Worker.Domain.Entities;
+>>>>>>> origin/main
 
 namespace Pagarte.Worker.Interfaces
 {

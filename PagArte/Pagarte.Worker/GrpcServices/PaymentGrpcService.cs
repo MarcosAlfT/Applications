@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 using Pagarte.Contracts;
+=======
+﻿using Pagarte.Contracts;
+>>>>>>> origin/main
 using Pagarte.Worker.Interfaces;
 using Pagarte.Worker.Services;
 using Grpc.Core;

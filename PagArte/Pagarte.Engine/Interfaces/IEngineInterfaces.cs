@@ -5,7 +5,11 @@ namespace Pagarte.Engine.Interfaces
         Task UpdateStatusAsync(Guid paymentId, string status,
             string? companyReference = null, string? errorMessage = null);
         Task IncrementRetryAsync(Guid paymentId);
+<<<<<<< HEAD
         Task<(string? OperatorPaymentId, decimal Amount, string Currency, string ClientId)?>
+=======
+        Task<(string? DLocalPaymentId, decimal Amount, string Currency, string ClientId)?>
+>>>>>>> origin/main
             GetPaymentInfoAsync(Guid paymentId);
     }
 

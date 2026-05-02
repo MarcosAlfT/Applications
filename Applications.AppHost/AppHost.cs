@@ -14,6 +14,9 @@ var rabbitmq = builder.AddRabbitMQ("PagQueue", rabbitUser, rabbitPassword)
 
 
 
+
+
+
 // Identity Service
 var identity = builder.AddProject<Projects.IdentityService>("identity", launchProfileName: "https");
 

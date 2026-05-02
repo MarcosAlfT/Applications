@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 using Pagarte.Worker.Domain.Enums;
+=======
+﻿using Pagarte.Worker.Domain.Enums;
+>>>>>>> origin/main
 
 namespace Pagarte.Worker.Domain.Entities
 {

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 namespace Pagarte.Worker.Domain.Entities
+=======
+﻿namespace Pagarte.Worker.Domain.Entities
+>>>>>>> origin/main
 {
 	public class Service
 	{

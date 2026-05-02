@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 using Pagarte.Worker.Domain.Entities;
+=======
+﻿using Pagarte.Worker.Domain.Entities;
+>>>>>>> origin/main
 using Pagarte.Worker.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Pagarte.Worker.Domain.Enums;

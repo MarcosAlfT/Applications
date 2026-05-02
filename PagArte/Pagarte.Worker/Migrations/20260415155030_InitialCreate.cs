@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 using System;
+=======
+﻿using System;
+>>>>>>> origin/main
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable

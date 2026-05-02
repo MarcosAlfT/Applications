@@ -21,7 +21,11 @@ namespace Pagarte.Worker.Domain.Enums
 	}
 
 	public enum FeeType {
+<<<<<<< HEAD
 		PaymentOperator,
+=======
+		DLocal,
+>>>>>>> origin/main
 		Company, 
 		Pagarte 
 	}
@@ -34,7 +38,11 @@ namespace Pagarte.Worker.Domain.Enums
 	public enum PaymentDetailType
 	{
 		ServiceAmount,
+<<<<<<< HEAD
 		PaymentOperatorFee,
+=======
+		DLocalFee,
+>>>>>>> origin/main
 		CompanyFee,
 		PagarteFee,
 		Tax

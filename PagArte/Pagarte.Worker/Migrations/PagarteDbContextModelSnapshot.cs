@@ -17,7 +17,11 @@ namespace Pagarte.Worker.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+<<<<<<< HEAD
                 .HasAnnotation("ProductVersion", "10.0.7")
+=======
+                .HasAnnotation("ProductVersion", "9.0.14")
+>>>>>>> origin/main
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -61,11 +65,14 @@ namespace Pagarte.Worker.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+<<<<<<< HEAD
                     b.Property<string>("CardNumber")
                         .IsRequired()
                         .HasMaxLength(25)
                         .HasColumnType("nvarchar(25)");
 
+=======
+>>>>>>> origin/main
                     b.Property<int>("CardType")
                         .HasColumnType("int");
 
@@ -76,6 +83,14 @@ namespace Pagarte.Worker.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+<<<<<<< HEAD
+=======
+                    b.Property<string>("DLocalCardToken")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+>>>>>>> origin/main
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
@@ -96,11 +111,14 @@ namespace Pagarte.Worker.Migrations
                         .HasMaxLength(4)
                         .HasColumnType("nvarchar(4)");
 
+<<<<<<< HEAD
                     b.Property<string>("OperatorCardToken")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+=======
+>>>>>>> origin/main
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -170,6 +188,12 @@ namespace Pagarte.Worker.Migrations
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)");
 
+<<<<<<< HEAD
+=======
+                    b.Property<string>("DLocalPaymentId")
+                        .HasColumnType("nvarchar(max)");
+
+>>>>>>> origin/main
                     b.Property<string>("ErrorMessage")
                         .HasColumnType("nvarchar(max)");
 
@@ -179,9 +203,12 @@ namespace Pagarte.Worker.Migrations
                     b.Property<DateTime?>("NextRetryAt")
                         .HasColumnType("datetime2");
 
+<<<<<<< HEAD
                     b.Property<string>("OperatorPaymentId")
                         .HasColumnType("nvarchar(max)");
 
+=======
+>>>>>>> origin/main
                     b.Property<DateTime?>("ProcessedAt")
                         .HasColumnType("datetime2");
 

@@ -42,6 +42,8 @@ namespace Pagarte.API
 
 			// OpenIddict validation
 			builder.Services.AddOpenIddict()
+			// OpenIddict validation
+			builder.Services.AddOpenIddict()
                 .AddValidation(options =>
                 {
                     var strAuthority = configuration.GetValue<string>("AuthSettings:Authority")
@@ -57,11 +59,15 @@ namespace Pagarte.API
 
 
 			builder.Services.AddAuthentication(options =>
+
+			builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
             });
 
+
+			builder.Services.AddAuthorization();
 
 			builder.Services.AddAuthorization();
             builder.Services.AddOpenApi();

@@ -1,14 +1,22 @@
 namespace Pagarte.Messaging.Messages
 {
     /// <summary>
+<<<<<<< HEAD
     /// Published by Worker after payment operator charge succeeds.
+=======
+    /// Published by Worker after dLocal charge succeeds.
+>>>>>>> origin/main
     /// Engine calls company API when it receives this.
     /// </summary>
     public class PaymentRequestMessage
     {
         public Guid PaymentId { get; set; }
         public Guid CompanyId { get; set; }
+<<<<<<< HEAD
         public string OperatorPaymentId { get; set; } = string.Empty;
+=======
+        public string DLocalPaymentId { get; set; } = string.Empty;
+>>>>>>> origin/main
         public decimal Amount { get; set; }
         public string Currency { get; set; } = string.Empty;
         public string Reference { get; set; } = string.Empty;
@@ -23,7 +31,11 @@ namespace Pagarte.Messaging.Messages
     public class RefundRequestMessage
     {
         public Guid PaymentId { get; set; }
+<<<<<<< HEAD
         public string OperatorPaymentId { get; set; } = string.Empty;
+=======
+        public string DLocalPaymentId { get; set; } = string.Empty;
+>>>>>>> origin/main
         public decimal Amount { get; set; }
         public string Currency { get; set; } = string.Empty;
         public string Reason { get; set; } = string.Empty;

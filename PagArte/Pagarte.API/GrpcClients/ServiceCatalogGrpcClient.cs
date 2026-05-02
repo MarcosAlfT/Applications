@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 using Pagarte.Contracts;
+=======
+﻿using Pagarte.Contracts;
+>>>>>>> origin/main
 
 namespace Pagarte.API.GrpcClients
 {
