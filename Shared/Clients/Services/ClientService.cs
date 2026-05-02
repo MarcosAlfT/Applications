@@ -57,7 +57,7 @@ namespace Clients.API.Services
 				var person = Person.CreatePerson(client.Id, firstName, middleName, lastName, dateOfBirth, idType, identificationNumber);
 				await _personRepository.CreateAsync(person);
 
-				return ApiResponse<PersonResponse>.CreateSuccess(client.Adapt<PersonResponse>(), Messages.Client.Created);
+				return ApiResponse<PersonResponse>.CreateSuccess(person.Adapt<PersonResponse>(), Messages.Client.Created);
 			}
 			catch (Exception ex)
 			{
@@ -79,7 +79,7 @@ namespace Clients.API.Services
 				var organization = Organization.CreateOrganization(client.Id, name, industry, identificationNumber);
 				await _organizationRepository.CreateAsync(organization);
 
-				return ApiResponse<OrganizationResponse>.CreateSuccess(client.Adapt<OrganizationResponse>(), Messages.Client.Created);
+				return ApiResponse<OrganizationResponse>.CreateSuccess(organization.Adapt<OrganizationResponse>(), Messages.Client.Created);
 			}
 			catch (Exception ex)
 			{

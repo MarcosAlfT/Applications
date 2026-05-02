@@ -1,4 +1,4 @@
-﻿namespace Pagarte.Worker.Domain.Entities
+namespace Pagarte.Worker.Domain.Entities
 {
 	public class Company
 	{

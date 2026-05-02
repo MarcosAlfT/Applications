@@ -5,8 +5,6 @@ using Pagarte.Engine.Services;
 using Pagarte.Messaging;
 using Shared.RabbitMQ;
 
-
-
 namespace Pagarte.Engine
 {
     public class Program
@@ -18,42 +16,31 @@ namespace Pagarte.Engine
                 {
                     var configuration = context.Configuration;
 
-                    // External connections (dLocal, Companies) with Polly resilience
+                    // External connections (payment operator, companies) with Polly resilience.
                     services.AddPagarteConnections(configuration);
 
-                    // Repository — raw SQL to PagarteDb (no EF Core dependency)
+                    // Repository uses raw SQL to PagarteDb to avoid referencing Worker.
                     services.AddScoped<IPaymentStatusRepository, PaymentStatusRepository>();
 
                     // Email service
                     services.AddScoped<IEmailSenderService, EmailSenderService>();
 
-					// RabbitMQ
-					services.AddSingleton<RabbitMQConnectionFactory>(sp =>
-					{
-						var config = sp.GetRequiredService<IConfiguration>();
-						var connectionString = config.GetConnectionString("PagQueue");
-						Console.WriteLine($"connString: {connectionString}");
+                    // RabbitMQ
+                    services.AddRabbitMq(configuration);
 
-						return new RabbitMQConnectionFactory(connectionString!);
-					});
-
-					// Consumers — each listens to one queue, that's it
-					services.AddHostedService<PaymentRequestConsumer>();
+                    // Each consumer listens to one queue.
+                    services.AddHostedService<PaymentRequestConsumer>();
                     services.AddHostedService<RefundConsumer>();
                     services.AddHostedService<EmailConsumer>();
                 })
                 .Build();
 
-			//var host = builder.Build();
-
-			// Declare RabbitMQ topology on startup
-			var rabbitFactory = host.Services.GetRequiredService<RabbitMQConnectionFactory>();
-
+            var rabbitFactory = host.Services.GetRequiredService<RabbitMQConnectionFactory>();
             var connection = await rabbitFactory.GetConnectionAsync();
             var channel = await connection.CreateChannelAsync();
             await PagarteTopology.DeclareAllAsync(channel);
 
-			host.Run();
+            host.Run();
         }
     }
 }

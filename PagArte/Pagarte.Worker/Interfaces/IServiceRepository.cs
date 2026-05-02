@@ -1,4 +1,4 @@
-﻿using Pagarte.Worker.Domain.Entities;
+using Pagarte.Worker.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;

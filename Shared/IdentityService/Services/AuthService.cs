@@ -1,4 +1,4 @@
-﻿using FluentResults;
+using FluentResults;
 using IdentityService.Domain;
 using IdentityService.Dtos.Auth;
 using IdentityService.Infrastructure.Security;
@@ -141,9 +141,9 @@ namespace IdentityService.Services
 				return Result.Fail<ClaimsPrincipal>("User is not active. Please contact support.");
 			}
 
-			var strAudience = _configuration.GetValue<string>("AuthSettings:Audience") ?? string.Empty;
+			var audiences = GetConfiguredAudiences();
 
-			if (string.IsNullOrEmpty(strAudience))
+			if (audiences.Length == 0)
 			{
 				return Result.Fail<ClaimsPrincipal>("Audience not configured.");
 			}
@@ -153,18 +153,19 @@ namespace IdentityService.Services
 				new (OpenIddictConstants.Claims.Subject, user.Id.ToString()),
 				new (OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
                 new (OpenIddictConstants.Claims.Name, user.Username ?? string.Empty),
-				new (OpenIddictConstants.Claims.Audience, strAudience),
 			};
+
+			claims.AddRange(audiences.Select(audience => new Claim(OpenIddictConstants.Claims.Audience, audience)));
 
 			var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 			var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
-			claimsPrincipal.SetAudiences(strAudience);
+			claimsPrincipal.SetAudiences(audiences);
 
 			//claimsPrincipal.SetScopes("api");
 			claimsPrincipal.SetScopes(OpenIddictConstants.Scopes.OfflineAccess, OpenIddictConstants.Scopes.Profile, "api");
 
-			claimsPrincipal.SetResources(strAudience);
+			claimsPrincipal.SetResources(audiences);
 
 
 			claimsPrincipal.SetDestinations(static claim => claim.Type switch
@@ -180,6 +181,27 @@ namespace IdentityService.Services
 
 			// Return the completed ClaimsPrincipal object, wrapped in a success Result.
 			return Result.Ok(claimsPrincipal);
+		}
+
+		private string[] GetConfiguredAudiences()
+		{
+			var audiences = _configuration.GetSection("AuthSettings:Audiences").Get<string[]>() ?? [];
+
+			if (audiences.Length == 0)
+			{
+				var audience = _configuration.GetValue<string>("AuthSettings:Audience");
+
+				if (!string.IsNullOrWhiteSpace(audience))
+				{
+					audiences = [audience];
+				}
+			}
+
+			return audiences
+				.Where(audience => !string.IsNullOrWhiteSpace(audience))
+				.Select(audience => audience.Trim())
+				.Distinct(StringComparer.Ordinal)
+				.ToArray();
 		}
 	}
 }

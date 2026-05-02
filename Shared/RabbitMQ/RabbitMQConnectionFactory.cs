@@ -8,14 +8,14 @@ namespace Shared.RabbitMQ
     /// </summary>
     public class RabbitMQConnectionFactory : IDisposable
     {
-		private readonly string _connectionString;
+		private readonly RabbitMQConnentionOptions _connectionOptions;
 
         private IConnection? _connection;
         private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-        public RabbitMQConnectionFactory(string connectionString)
+        public RabbitMQConnectionFactory(RabbitMQConnentionOptions connOptions)
         {
-            _connectionString = connectionString;
+            _connectionOptions = connOptions;
 		}
 
         public async Task<IConnection> GetConnectionAsync()
@@ -25,11 +25,14 @@ namespace Shared.RabbitMQ
             {
                 if (_connection == null || !_connection.IsOpen)
                 {
-					Console.WriteLine($"RabbitMQ conn: {_connectionString}");
+
+					var connectionString = BuildConnectionString();
+
+                    Console.WriteLine($"RabbitMQ connection string: {connectionString}");
 
 					var factory = new ConnectionFactory
 					{
-						Uri = new Uri(_connectionString),
+						Uri = new Uri(connectionString),
 						AutomaticRecoveryEnabled = true,
 						NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
 					};
@@ -43,7 +46,25 @@ namespace Shared.RabbitMQ
 			}
 		}
 
-        public void Dispose()
+		private string BuildConnectionString()
+		{
+            var hostName = _connectionOptions.HostName;
+            var userName = _connectionOptions.UserName;
+
+			return _connectionOptions.Mode switch
+			{
+				RabbitMQConnentionMode.FromEnvironment =>
+					_connectionOptions.ConnectionString
+					?? throw new Exception("ConnectionString is null"),
+
+				RabbitMQConnentionMode.FromConfiguration =>
+					$"amqp://{userName}:{_connectionOptions.Password}@{hostName}:{_connectionOptions.Port}/",
+
+				_ => throw new Exception("Unsupported RabbitMQ mode")
+			};
+		}
+
+		public void Dispose()
         {
             _connection?.CloseAsync().GetAwaiter().GetResult();
             _connection?.Dispose();

@@ -1,5 +1,5 @@
 using Pagarte.Connections.Companies;
-using Pagarte.Connections.DLocal;
+using Pagarte.Connections.PaymentOperators;
 using Pagarte.Engine.Interfaces;
 using Pagarte.Messaging;
 using Pagarte.Messaging.Messages;
@@ -8,7 +8,7 @@ using Shared.RabbitMQ;
 namespace Pagarte.Engine.Consumers
 {
     /// <summary>
-    /// Reads PaymentRequestMessage published by Worker after dLocal charge.
+    /// Reads PaymentRequestMessage published by Worker after payment operator charge.
     /// Calls company API. On failure triggers refund.
     /// </summary>
     public class PaymentRequestConsumer(
@@ -76,7 +76,7 @@ namespace Pagarte.Engine.Consumers
                     new RefundRequestMessage
                     {
                         PaymentId = message.PaymentId,
-                        DLocalPaymentId = message.DLocalPaymentId,
+                        OperatorPaymentId = message.OperatorPaymentId,
                         Amount = message.Amount,
                         Currency = message.Currency,
                         Reason = result.ErrorMessage ?? "Company rejected payment",
@@ -93,13 +93,13 @@ namespace Pagarte.Engine.Consumers
     /// </summary>
     public class RefundConsumer(
         RabbitMQConnectionFactory connectionFactory,
-        IDLocalAdapter dLocalAdapter,
+        IPaymentOperatorAdapter paymentOperatorAdapter,
         IPaymentStatusRepository paymentStatus,
         IMessagePublisher messagePublisher,
         ILogger<RefundConsumer> logger)
         : BaseConsumer<RefundRequestMessage>(connectionFactory, logger)
     {
-        private readonly IDLocalAdapter _dLocalAdapter = dLocalAdapter;
+        private readonly IPaymentOperatorAdapter _paymentOperatorAdapter = paymentOperatorAdapter;
         private readonly IPaymentStatusRepository _paymentStatus = paymentStatus;
         private readonly IMessagePublisher _messagePublisher = messagePublisher;
         private const int MaxRetries = 3;
@@ -112,8 +112,8 @@ namespace Pagarte.Engine.Consumers
             _logger.LogInformation("Processing refund for payment {PaymentId}, attempt {Retry}",
                 message.PaymentId, message.RetryCount + 1);
 
-            var result = await _dLocalAdapter.RefundAsync(
-                message.DLocalPaymentId,
+            var result = await _paymentOperatorAdapter.RefundAsync(
+                message.OperatorPaymentId,
                 message.Amount,
                 message.Currency,
                 message.Reason);
@@ -149,7 +149,7 @@ namespace Pagarte.Engine.Consumers
                     new RefundRequestMessage
                     {
                         PaymentId = message.PaymentId,
-                        DLocalPaymentId = message.DLocalPaymentId,
+                        OperatorPaymentId = message.OperatorPaymentId,
                         Amount = message.Amount,
                         Currency = message.Currency,
                         Reason = message.Reason,

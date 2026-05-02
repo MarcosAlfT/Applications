@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Pagarte.Worker.Domain.Entities;
 using Pagarte.Worker.Domain.Enums;
 using Pagarte.Worker.Infrastructure;
-using Pagarte.Worker.Infrastructure.Repository;
 
 namespace Pagarte.Worker.Services
 {
@@ -47,7 +46,7 @@ namespace Pagarte.Worker.Services
 			if (await context.FeeConfigurations.IgnoreQueryFilters().AnyAsync()) return;
 
 			context.FeeConfigurations.AddRange(
-				new FeeConfiguration { Id = Guid.NewGuid(), Type = FeeType.DLocal, CalculationType = CalculationType.Percentage, Value = 2.9m, Currency = "USD", IsActive = true, EffectiveDate = DateTime.UtcNow.AddYears(-1) },
+				new FeeConfiguration { Id = Guid.NewGuid(), Type = FeeType.PaymentOperator, CalculationType = CalculationType.Percentage, Value = 2.9m, Currency = "USD", IsActive = true, EffectiveDate = DateTime.UtcNow.AddYears(-1) },
 				new FeeConfiguration { Id = Guid.NewGuid(), Type = FeeType.Pagarte, CalculationType = CalculationType.Percentage, Value = 1.5m, Currency = "USD", IsActive = true, EffectiveDate = DateTime.UtcNow.AddYears(-1) },
 				new FeeConfiguration { Id = Guid.NewGuid(), Type = FeeType.Company, CalculationType = CalculationType.FixedAmount, Value = 0.30m, Currency = "USD", IsActive = true, EffectiveDate = DateTime.UtcNow.AddYears(-1) }
 			);
