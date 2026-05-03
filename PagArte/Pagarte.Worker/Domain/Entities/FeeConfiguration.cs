@@ -1,4 +1,4 @@
-﻿using Pagarte.Worker.Domain.Enums;
+using Pagarte.Worker.Domain.Enums;
 
 namespace Pagarte.Worker.Domain.Entities
 {

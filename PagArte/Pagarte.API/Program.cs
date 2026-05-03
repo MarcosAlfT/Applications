@@ -1,4 +1,4 @@
-﻿using OpenIddict.Validation.AspNetCore;
+using OpenIddict.Validation.AspNetCore;
 using Pagarte.API.GrpcClients;
 using Pagarte.Contracts;
 
@@ -13,16 +13,27 @@ namespace Pagarte.API
 
 			builder.Services.AddControllers();
 
-			// gRPC clients → calls Pagarte.Worker
-			var workerUrl = configuration["PagarteWorker:GrpcUrl"]
-				?? "https://localhost:7300";
+			// gRPC clients call Pagarte.Worker.
+			var workerUrl = configuration["PagarteWorker:GrpcUrl"];
+
+			if (string.IsNullOrWhiteSpace(workerUrl))
+			{
+				throw new InvalidOperationException("PagarteWorker:GrpcUrl is not configured.");
+			}
+
+			var allowUntrustedWorkerCertificate =
+				builder.Environment.IsDevelopment()
+				&& configuration.GetValue<bool>("PagarteWorker:AllowUntrustedCertificate");
 
 			builder.Services.AddGrpcClient<CreditCardService.CreditCardServiceClient>(
-				o => o.Address = new Uri(workerUrl));
+				o => o.Address = new Uri(workerUrl))
+				.ConfigurePrimaryHttpMessageHandler(() => CreateGrpcHttpHandler(allowUntrustedWorkerCertificate));
 			builder.Services.AddGrpcClient<PaymentService.PaymentServiceClient>(
-				o => o.Address = new Uri(workerUrl));
+				o => o.Address = new Uri(workerUrl))
+				.ConfigurePrimaryHttpMessageHandler(() => CreateGrpcHttpHandler(allowUntrustedWorkerCertificate));
 			builder.Services.AddGrpcClient<ServiceCatalogService.ServiceCatalogServiceClient>(
-				o => o.Address = new Uri(workerUrl));
+				o => o.Address = new Uri(workerUrl))
+				.ConfigurePrimaryHttpMessageHandler(() => CreateGrpcHttpHandler(allowUntrustedWorkerCertificate));
 
 			// gRPC client wrappers
 			builder.Services.AddScoped<CreditCardGrpcClient>();
@@ -69,5 +80,18 @@ namespace Pagarte.API
 
 			app.Run();
         }
+
+		private static HttpMessageHandler CreateGrpcHttpHandler(bool allowUntrustedCertificate)
+		{
+			var handler = new HttpClientHandler();
+
+			if (allowUntrustedCertificate)
+			{
+				handler.ServerCertificateCustomValidationCallback =
+					HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+			}
+
+			return handler;
+		}
     }
 }

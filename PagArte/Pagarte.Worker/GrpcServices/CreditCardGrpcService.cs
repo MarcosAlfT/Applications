@@ -1,19 +1,19 @@
-﻿using Pagarte.Contracts;
+using Pagarte.Contracts;
 using Pagarte.Worker.Domain.Enums;
 using Pagarte.Worker.Interfaces;
-using Pagarte.Connections.DLocal;
+using Pagarte.Connections.PaymentOperators;
 using Grpc.Core;
 
 namespace Pagarte.Worker.GrpcServices
 {
 	public class CreditCardGrpcService(
 		ICreditCardRepository creditCardRepository,
-		IDLocalAdapter dLocalAdapter,
+		IPaymentOperatorAdapter paymentOperatorAdapter,
 		ILogger<CreditCardGrpcService> logger)
 		: Pagarte.Contracts.CreditCardService.CreditCardServiceBase
 	{
 		private readonly ICreditCardRepository _creditCardRepository = creditCardRepository;
-		private readonly IDLocalAdapter _dLocalAdapter = dLocalAdapter;
+		private readonly IPaymentOperatorAdapter _paymentOperatorAdapter = paymentOperatorAdapter;
 		private readonly ILogger<CreditCardGrpcService> _logger = logger;
 
 		public override async Task<GetCardsResponse> GetCards(
@@ -40,9 +40,10 @@ namespace Pagarte.Worker.GrpcServices
 		{
 			_logger.LogInformation("Registering card for client {ClientId}", request.ClientId);
 
-			// Call dLocal with encrypted data — they decrypt, we get back a token
-			var result = await _dLocalAdapter.RegisterCardAsync(
-				request.EncryptedCardData, request.CardHolderName);
+			// Call payment operator with request-only CVV and receive a token.
+			var result = await _paymentOperatorAdapter.RegisterCardAsync(
+				request.CardNumber, request.Cvv, request.CardHolderName,
+				request.ExpiryMonth, request.ExpiryYear);
 
 			if (!result.Success)
 				return new RegisterCardResponse
@@ -62,13 +63,19 @@ namespace Pagarte.Worker.GrpcServices
 				}
 			}
 
-			// Save token — never store plain card data
+			// Save card number and token. CVV is intentionally not persisted.
+			var cardType = Enum.TryParse<CardType>(
+				result.CardType, ignoreCase: true, out var parsedCardType)
+				? parsedCardType
+				: CardType.Other;
+
 			var newCard = Domain.Entities.CreditCard.Create(
 				request.ClientId,
 				result.CardToken!,
+				request.CardNumber,
 				request.CardHolderName,
 				result.Last4Digits!,
-				Enum.Parse<CardType>(result.CardType!),
+				cardType,
 				result.ExpiryMonth,
 				result.ExpiryYear,
 				request.IsDefault);
@@ -83,7 +90,9 @@ namespace Pagarte.Worker.GrpcServices
 				Success = true,
 				CardId = newCard.Id.ToString(),
 				Last4Digits = result.Last4Digits,
-				CardType = result.CardType
+				CardType = result.CardType,
+				ExpiryMonth = result.ExpiryMonth,
+				ExpiryYear = result.ExpiryYear
 			};
 		}
 

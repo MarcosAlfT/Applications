@@ -8,18 +8,14 @@ namespace Shared.RabbitMQ
     /// </summary>
     public class RabbitMQConnectionFactory : IDisposable
     {
-		private readonly string _connectionString;
+		private readonly RabbitMQConnentionOptions _connectionOptions;
 
-		//private readonly string _host;
-  //      private readonly int _port;
-  //      private readonly string _username;
-  //      private readonly string _password;
         private IConnection? _connection;
         private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-        public RabbitMQConnectionFactory(string connectionString)
+        public RabbitMQConnectionFactory(RabbitMQConnentionOptions connOptions)
         {
-            _connectionString = connectionString;
+            _connectionOptions = connOptions;
 		}
 
         public async Task<IConnection> GetConnectionAsync()
@@ -29,9 +25,14 @@ namespace Shared.RabbitMQ
             {
                 if (_connection == null || !_connection.IsOpen)
                 {
+
+					var connectionString = BuildConnectionString();
+
+                    Console.WriteLine($"RabbitMQ connection string: {connectionString}");
+
 					var factory = new ConnectionFactory
 					{
-						Uri = new Uri(_connectionString),
+						Uri = new Uri(connectionString),
 						AutomaticRecoveryEnabled = true,
 						NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
 					};
@@ -45,61 +46,29 @@ namespace Shared.RabbitMQ
 			}
 		}
 
-        public void Dispose()
+		private string BuildConnectionString()
+		{
+            var hostName = _connectionOptions.HostName;
+            var userName = _connectionOptions.UserName;
+
+			return _connectionOptions.Mode switch
+			{
+				RabbitMQConnentionMode.FromEnvironment =>
+					_connectionOptions.ConnectionString
+					?? throw new Exception("ConnectionString is null"),
+
+				RabbitMQConnentionMode.FromConfiguration =>
+					$"amqp://{userName}:{_connectionOptions.Password}@{hostName}:{_connectionOptions.Port}/",
+
+				_ => throw new Exception("Unsupported RabbitMQ mode")
+			};
+		}
+
+		public void Dispose()
         {
             _connection?.CloseAsync().GetAwaiter().GetResult();
             _connection?.Dispose();
         }
     }
 
-
-	public class RabbitMQConnectionFactoryNoAspire : IDisposable
-	{
-		private readonly string _host;
-		private readonly int _port;
-		private readonly string _username;
-		private readonly string _password;
-		private IConnection? _connection;
-		private readonly SemaphoreSlim _semaphore = new(1, 1);
-
-		public RabbitMQConnectionFactoryNoAspire(string host, int port, string username, string password)
-		{
-			_host = host;
-			_port = port;
-			_username = username;
-			_password = password;
-		}
-
-		public async Task<IConnection> GetConnectionAsync()
-		{
-			await _semaphore.WaitAsync();
-			try
-			{
-				if (_connection == null || !_connection.IsOpen)
-				{
-					var factory = new ConnectionFactory
-					{
-						HostName = _host,
-						Port = _port,
-						UserName = _username,
-						Password = _password,
-						AutomaticRecoveryEnabled = true,
-						NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
-					};
-					_connection = await factory.CreateConnectionAsync();
-				}
-				return _connection;
-			}
-			finally
-			{
-				_semaphore.Release();
-			}
-		}
-
-		public void Dispose()
-		{
-			_connection?.CloseAsync().GetAwaiter().GetResult();
-			_connection?.Dispose();
-		}
-	}
 }

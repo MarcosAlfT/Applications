@@ -1,4 +1,4 @@
-﻿using Pagarte.Contracts;
+using Pagarte.Contracts;
 using Pagarte.Worker.Interfaces;
 using Pagarte.Worker.Services;
 using Grpc.Core;

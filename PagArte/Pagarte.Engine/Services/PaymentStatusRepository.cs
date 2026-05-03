@@ -65,14 +65,14 @@ namespace Pagarte.Engine.Services
             await cmd.ExecuteNonQueryAsync();
         }
 
-        public async Task<(string? DLocalPaymentId, decimal Amount,
+        public async Task<(string? OperatorPaymentId, decimal Amount,
             string Currency, string ClientId)?> GetPaymentInfoAsync(Guid paymentId)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT p.DLocalPaymentId, pd.Amount, p.Currency, p.ClientId
+                SELECT p.OperatorPaymentId, pd.Amount, p.Currency, p.ClientId
                 FROM Payments p
                 INNER JOIN PaymentDetails pd ON pd.PaymentId = p.Id
                 WHERE p.Id = @PaymentId AND pd.Type = 0"; // 0 = ServiceAmount

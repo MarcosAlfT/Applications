@@ -1,4 +1,4 @@
-using Pagarte.Connections.DLocal;
+using Pagarte.Connections.PaymentOperators;
 using Pagarte.Messaging;
 using Pagarte.Messaging.Messages;
 using Pagarte.Worker.Domain.Entities;
@@ -20,7 +20,7 @@ namespace Pagarte.Worker.Services
 		ICreditCardRepository creditCardRepository,
 		IServiceRepository serviceRepository,
 		IFeeConfigurationRepository feeConfigRepository,
-		IDLocalAdapter dLocalAdapter,
+		IPaymentOperatorAdapter paymentOperatorAdapter,
 		IMessagePublisher messagePublisher,
 		ILogger<PaymentEngineService> logger)
 	{
@@ -28,7 +28,7 @@ namespace Pagarte.Worker.Services
 		private readonly ICreditCardRepository _creditCardRepository = creditCardRepository;
 		private readonly IServiceRepository _serviceRepository = serviceRepository;
 		private readonly IFeeConfigurationRepository _feeConfigRepository = feeConfigRepository;
-		private readonly IDLocalAdapter _dLocalAdapter = dLocalAdapter;
+		private readonly IPaymentOperatorAdapter _paymentOperatorAdapter = paymentOperatorAdapter;
 		private readonly IMessagePublisher _messagePublisher = messagePublisher;
 		private readonly ILogger<PaymentEngineService> _logger = logger;
 
@@ -62,19 +62,19 @@ namespace Pagarte.Worker.Services
 					detail.Amount, currency));
 			}
 
-			// Charge card via dLocal
+			// Charge card via payment operator
 			payment.UpdateStatus(TransactionStatus.ChargingCard);
 			await _paymentRepository.UpdateAsync(payment);
 
-			var chargeResult = await _dLocalAdapter.ChargeAsync(
-				card.DLocalCardToken, totalAmount, currency, payment.Reference);
+			var chargeResult = await _paymentOperatorAdapter.ChargeAsync(
+				card.OperatorCardToken, totalAmount, currency, payment.Reference);
 
 			if (!chargeResult.Success)
 			{
 				payment.UpdateStatus(TransactionStatus.Failed, chargeResult.ErrorMessage);
 				await _paymentRepository.UpdateAsync(payment);
 
-				_logger.LogWarning("dLocal charge failed for payment {Reference}: {Error}",
+				_logger.LogWarning("Payment operator charge failed for payment {Reference}: {Error}",
 					payment.Reference, chargeResult.ErrorMessage);
 
 				return new PaymentResult(false, payment.Id, payment.Reference,
@@ -82,7 +82,7 @@ namespace Pagarte.Worker.Services
 			}
 
 			// Card charged successfully
-			payment.SetDLocalPaymentId(chargeResult.DLocalPaymentId!);
+			payment.SetOperatorPaymentId(chargeResult.OperatorPaymentId!);
 			payment.UpdateStatus(TransactionStatus.CardCharged);
 			await _paymentRepository.UpdateAsync(payment);
 
@@ -92,7 +92,7 @@ namespace Pagarte.Worker.Services
 				{
 					PaymentId = payment.Id,
 					CompanyId = service.CompanyId,
-					DLocalPaymentId = chargeResult.DLocalPaymentId!,
+					OperatorPaymentId = chargeResult.OperatorPaymentId!,
 					Amount = totalAmount,
 					Currency = currency,
 					Reference = payment.Reference,
@@ -125,7 +125,7 @@ namespace Pagarte.Worker.Services
 
 				var type = fee.Type switch
 				{
-					FeeType.DLocal => PaymentDetailType.DLocalFee,
+					FeeType.PaymentOperator => PaymentDetailType.PaymentOperatorFee,
 					FeeType.Company => PaymentDetailType.CompanyFee,
 					FeeType.Pagarte => PaymentDetailType.PagarteFee,
 					_ => PaymentDetailType.Tax

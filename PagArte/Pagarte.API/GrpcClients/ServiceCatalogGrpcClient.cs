@@ -1,4 +1,4 @@
-﻿using Pagarte.Contracts;
+using Pagarte.Contracts;
 
 namespace Pagarte.API.GrpcClients
 {

@@ -23,7 +23,8 @@ namespace Pagarte.Worker.Infrastructure
 			{
 				entity.HasKey(e => e.Id);
 				entity.Property(e => e.ClientId).IsRequired();
-				entity.Property(e => e.DLocalCardToken).IsRequired().HasMaxLength(500);
+				entity.Property(e => e.OperatorCardToken).IsRequired().HasMaxLength(500);
+				entity.Property(e => e.CardNumber).IsRequired().HasMaxLength(25);
 				entity.Property(e => e.CardHolderName).IsRequired().HasMaxLength(200);
 				entity.Property(e => e.Last4Digits).IsRequired().HasMaxLength(4);
 				entity.HasIndex(e => e.ClientId);

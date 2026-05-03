@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>c0271d32-8ce5-4678-a233-0a377adcf7e3</UserSecretsId>
@@ -13,11 +13,13 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="13.2.2" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.2.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.7" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PagArte\Pagarte.API\Pagarte.API.csproj" />
+    <ProjectReference Include="..\PagArte\Pagarte.Engine\Pagarte.Engine.csproj" />
     <ProjectReference Include="..\PagArte\Pagarte.Worker\Pagarte.Worker.csproj" />
     <ProjectReference Include="..\Shared\Clients\Clients.API.csproj" />
     <ProjectReference Include="..\Shared\IdentityService\IdentityService.csproj" />

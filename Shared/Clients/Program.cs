@@ -13,15 +13,19 @@ public class Program
 {
     public static void Main(string[] args)
     {
+        Console.WriteLine("Clients.API startup: creating builder.");
+
         var builder = WebApplication.CreateBuilder(args);
 		var configuration = builder.Configuration;
 		builder.AddServiceDefaults();
+		Console.WriteLine("Clients.API startup: service defaults configured.");
 
         // Add services to the container.
         builder.Services.AddControllers().AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 		});
+		Console.WriteLine("Clients.API startup: controllers configured.");
 
 		// Configure Entity Framework Core with SQL Server
 		builder.Services.AddDbContext<ClientsDbContext>(options =>
@@ -41,19 +45,20 @@ public class Program
 
 		//Register the mappers
         MappingConfig.Configure();
+		Console.WriteLine("Clients.API startup: mapping configured.");
 
 		// Configure OpenIddict validation
+		var authAuthority = configuration.GetValue<string>("AuthSettings:Authority")
+			?? throw new InvalidOperationException("AuthSettings:Authority is not configured.");
+		var authAudience = configuration.GetValue<string>("AuthSettings:Audience")
+			?? throw new InvalidOperationException("AuthSettings:Audience is not configured.");
+		Console.WriteLine($"Clients.API startup: configuring OpenIddict authority '{authAuthority}' audience '{authAudience}'.");
+
 		builder.Services.AddOpenIddict()
             .AddValidation(options =>
             {
-
-				var strAuthority = configuration.GetValue<string>("AuthSettings:Authority")
-    				?? throw new InvalidOperationException("AuthSettings:Authority is not configured."); ;
-				var strAudience = configuration.GetValue<string>("AuthSettings:Audience")
-    				?? throw new InvalidOperationException("AuthSettings:Authority is not configured."); ;
-
-				options.SetIssuer(strAuthority);
-                options.AddAudiences(strAudience);
+				options.SetIssuer(authAuthority);
+                options.AddAudiences(authAudience);
                 options.UseSystemNetHttp();
                 options.UseAspNetCore();
 			});
@@ -67,7 +72,13 @@ public class Program
 		// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 		builder.Services.AddOpenApi();
 
+        Console.WriteLine("Clients.API startup: building app.");
         var app = builder.Build();
+		var logger = app.Services.GetRequiredService<ILogger<Program>>();
+		logger.LogInformation(
+			"Clients API configured with authority {Authority} and audience {Audience}.",
+			authAuthority,
+			authAudience);
 
         app.MapDefaultEndpoints();
 
@@ -79,9 +90,26 @@ public class Program
 
         app.UseHttpsRedirection();
 		app.UseRouting();
+		app.Use(async (context, next) =>
+		{
+			logger.LogInformation(
+				"Clients request reached pre-auth middleware: {Method} {Path}. Authorization header present: {HasAuthorization}.",
+				context.Request.Method,
+				context.Request.Path,
+				context.Request.Headers.ContainsKey("Authorization"));
+
+			await next();
+
+			logger.LogInformation(
+				"Clients request completed after auth pipeline: {Method} {Path} => {StatusCode}.",
+				context.Request.Method,
+				context.Request.Path,
+				context.Response.StatusCode);
+		});
 		app.UseAuthentication();
 		app.UseAuthorization();
         app.MapControllers();
+		Console.WriteLine("Clients.API startup: running app.");
         app.Run();
     }
 }

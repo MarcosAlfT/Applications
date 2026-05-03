@@ -1,4 +1,4 @@
-﻿using Pagarte.Contracts;
+using Pagarte.Contracts;
 
 namespace Pagarte.API.GrpcClients
 {
@@ -15,13 +15,16 @@ namespace Pagarte.API.GrpcClients
 				new GetCardRequest { CardId = cardId, ClientId = clientId });
 
 		public async Task<RegisterCardResponse> RegisterCardAsync(
-			string clientId, string encryptedCardData,
-			string cardHolderName, bool isDefault)
+			string clientId, string cardNumber, string cvv, string cardHolderName,
+			int expiryMonth, int expiryYear, bool isDefault)
 			=> await _client.RegisterCardAsync(new RegisterCardRequest
 			{
 				ClientId = clientId,
-				EncryptedCardData = encryptedCardData,
+				CardNumber = cardNumber,
+				Cvv = cvv,
 				CardHolderName = cardHolderName,
+				ExpiryMonth = expiryMonth,
+				ExpiryYear = expiryYear,
 				IsDefault = isDefault
 			});
 

@@ -1,4 +1,4 @@
-﻿using Pagarte.Worker.Domain.Entities;
+using Pagarte.Worker.Domain.Entities;
 using Pagarte.Worker.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Pagarte.Worker.Infrastructure;

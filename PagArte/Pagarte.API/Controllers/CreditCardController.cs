@@ -44,8 +44,8 @@ namespace Pagarte.API.Controllers
 			if (validation != null) return validation;
 
 			var result = await _grpcClient.RegisterCardAsync(
-				GetClientId()!, request.EncryptedCardData,
-				request.CardHolderName, request.IsDefault);
+				GetClientId()!, request.CardNumber, request.Cvv, request.CardHolderName,
+				request.ExpiryMonth, request.ExpiryYear, request.IsDefault);
 
 			if (!result.Success)
 				return Ok(ApiResponse.CreateFailure(result.ErrorMessage));
@@ -54,7 +54,9 @@ namespace Pagarte.API.Controllers
 			{
 				result.CardId,
 				result.Last4Digits,
-				result.CardType
+				result.CardType,
+				result.ExpiryMonth,
+				result.ExpiryYear
 			}, "Card registered successfully."));
 		}
 

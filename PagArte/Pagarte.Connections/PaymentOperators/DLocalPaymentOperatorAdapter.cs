@@ -4,25 +4,26 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
-namespace Pagarte.Connections.DLocal
+namespace Pagarte.Connections.PaymentOperators
 {
-    public class DLocalAdapter(
+    public class DLocalPaymentOperatorAdapter(
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
-        ILogger<DLocalAdapter> logger) : IDLocalAdapter
+        ILogger<DLocalPaymentOperatorAdapter> logger) : IPaymentOperatorAdapter
     {
         private readonly HttpClient _httpClient =
-            httpClientFactory.CreateClient("dlocal");
+            httpClientFactory.CreateClient("payment-operator");
         private readonly string _apiKey =
-            configuration["DLocal:ApiKey"]
-            ?? throw new InvalidOperationException("DLocal:ApiKey not configured.");
+            configuration["PaymentOperator:ApiKey"]
+            ?? throw new InvalidOperationException("PaymentOperator:ApiKey not configured.");
         private readonly string _apiSecret =
-            configuration["DLocal:ApiSecret"]
-            ?? throw new InvalidOperationException("DLocal:ApiSecret not configured.");
-        private readonly ILogger<DLocalAdapter> _logger = logger;
+            configuration["PaymentOperator:ApiSecret"]
+            ?? throw new InvalidOperationException("PaymentOperator:ApiSecret not configured.");
+        private readonly ILogger<DLocalPaymentOperatorAdapter> _logger = logger;
 
-        public async Task<DLocalCardResult> RegisterCardAsync(
-            string encryptedCardData, string cardHolderName)
+		public async Task<PaymentOperatorCardResult> RegisterCardAsync(
+			string cardNumber, string cvv, string cardHolderName,
+			int expiryMonth, int expiryYear)
         {
             try
             {
@@ -30,8 +31,11 @@ namespace Pagarte.Connections.DLocal
                 {
                     card = new
                     {
-                        encrypted_data = encryptedCardData,
-                        holder_name = cardHolderName
+                        number = cardNumber,
+                        cvv,
+                        holder_name = cardHolderName,
+                        expiration_month = expiryMonth,
+                        expiration_year = expiryYear
                     }
                 };
 
@@ -40,31 +44,35 @@ namespace Pagarte.Connections.DLocal
                 if (!response.IsSuccessStatusCode)
                 {
                     var error = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("dLocal card registration failed: {Error}", error);
-                    return new DLocalCardResult(false, null, null, null, 0, 0,
+                    _logger.LogWarning("Payment operator card registration failed: {Error}", error);
+                    return new PaymentOperatorCardResult(false, null, null, null, 0, 0,
                         "Card registration failed.");
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
                 var result = JsonSerializer.Deserialize<JsonElement>(content);
 
-                return new DLocalCardResult(
+                return new PaymentOperatorCardResult(
                     true,
                     result.GetProperty("card_id").GetString(),
                     result.GetProperty("last4").GetString(),
                     result.GetProperty("brand").GetString(),
-                    result.GetProperty("expiration_month").GetInt32(),
-                    result.GetProperty("expiration_year").GetInt32(),
+                    result.TryGetProperty("expiration_month", out var month)
+                        ? month.GetInt32()
+                        : expiryMonth,
+                    result.TryGetProperty("expiration_year", out var year)
+                        ? year.GetInt32()
+                        : expiryYear,
                     null);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error registering card with dLocal");
-                return new DLocalCardResult(false, null, null, null, 0, 0, ex.Message);
+                _logger.LogError(ex, "Error registering card with payment operator");
+                return new PaymentOperatorCardResult(false, null, null, null, 0, 0, ex.Message);
             }
         }
 
-        public async Task<DLocalChargeResult> ChargeAsync(
+        public async Task<PaymentOperatorChargeResult> ChargeAsync(
             string cardToken, decimal amount, string currency, string reference)
         {
             try
@@ -84,33 +92,33 @@ namespace Pagarte.Connections.DLocal
                 if (!response.IsSuccessStatusCode)
                 {
                     var error = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("dLocal charge failed: {Error}", error);
-                    return new DLocalChargeResult(false, null, "Payment charge failed.");
+                    _logger.LogWarning("Payment operator charge failed: {Error}", error);
+                    return new PaymentOperatorChargeResult(false, null, "Payment charge failed.");
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
                 var result = JsonSerializer.Deserialize<JsonElement>(content);
 
-                return new DLocalChargeResult(
+                return new PaymentOperatorChargeResult(
                     true,
                     result.GetProperty("id").GetString(),
                     null);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error charging with dLocal");
-                return new DLocalChargeResult(false, null, ex.Message);
+                _logger.LogError(ex, "Error charging with payment operator");
+                return new PaymentOperatorChargeResult(false, null, ex.Message);
             }
         }
 
-        public async Task<DLocalRefundResult> RefundAsync(
-            string dLocalPaymentId, decimal amount, string currency, string reason)
+        public async Task<PaymentOperatorRefundResult> RefundAsync(
+            string operatorPaymentId, decimal amount, string currency, string reason)
         {
             try
             {
                 var payload = new
                 {
-                    payment_id = dLocalPaymentId,
+                    payment_id = operatorPaymentId,
                     amount,
                     currency,
                     description = reason
@@ -121,22 +129,22 @@ namespace Pagarte.Connections.DLocal
                 if (!response.IsSuccessStatusCode)
                 {
                     var error = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("dLocal refund failed: {Error}", error);
-                    return new DLocalRefundResult(false, null, "Refund failed.");
+                    _logger.LogWarning("Payment operator refund failed: {Error}", error);
+                    return new PaymentOperatorRefundResult(false, null, "Refund failed.");
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
                 var result = JsonSerializer.Deserialize<JsonElement>(content);
 
-                return new DLocalRefundResult(
+                return new PaymentOperatorRefundResult(
                     true,
                     result.GetProperty("id").GetString(),
                     null);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error refunding with dLocal");
-                return new DLocalRefundResult(false, null, ex.Message);
+                _logger.LogError(ex, "Error refunding with payment operator");
+                return new PaymentOperatorRefundResult(false, null, ex.Message);
             }
         }
 
