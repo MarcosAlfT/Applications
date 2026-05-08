@@ -12,7 +12,7 @@
     <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Shared\RabbitMQ\Shared.RabbitMQ.csproj" />
+    <ProjectReference Include="..\RabbitMQ\RabbitMQ.csproj" />
     <ProjectReference Include="..\Pagarte.Connections\Pagarte.Connections.csproj" />
     <ProjectReference Include="..\Pagarte.Messaging\Pagarte.Messaging.csproj" />
   </ItemGroup>

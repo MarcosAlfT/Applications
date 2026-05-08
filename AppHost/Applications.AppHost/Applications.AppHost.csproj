@@ -18,11 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PagArte\Pagarte.API\Pagarte.API.csproj" />
-    <ProjectReference Include="..\PagArte\Pagarte.Engine\Pagarte.Engine.csproj" />
-    <ProjectReference Include="..\PagArte\Pagarte.Worker\Pagarte.Worker.csproj" />
-    <ProjectReference Include="..\Shared\Clients\Clients.API.csproj" />
-    <ProjectReference Include="..\Shared\IdentityService\IdentityService.csproj" />
+    <ProjectReference Include="..\..\src\Pagarte.API\Pagarte.API.csproj" />
+    <ProjectReference Include="..\..\src\Pagarte.Engine\Pagarte.Engine.csproj" />
+    <ProjectReference Include="..\..\src\Pagarte.Worker\Pagarte.Worker.csproj" />
+    <ProjectReference Include="..\..\src\Clients\Clients.API.csproj" />
+    <ProjectReference Include="..\..\src\IdentityService\IdentityService.csproj" />
   </ItemGroup>
 
 </Project>
