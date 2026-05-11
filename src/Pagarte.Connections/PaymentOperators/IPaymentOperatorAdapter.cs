@@ -2,6 +2,8 @@ namespace Pagarte.Connections.PaymentOperators
 {
     public interface IPaymentOperatorAdapter
     {
+        string ProviderCode { get; }
+
         /// <summary>
         /// Registers a card with the payment operator.
         /// CVV is request-only and must not be persisted.

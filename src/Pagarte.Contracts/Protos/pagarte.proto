@@ -64,21 +64,33 @@ message CreditCardDto {
   int32 expiry_year = 6;
   bool is_default = 7;
   string created_at = 8;
+  string operator_provider = 9;
 }
 
 // ── Payment Service ────────────────────────────────────────────────────────
 
 service PaymentService {
-  rpc ProcessPayment (ProcessPaymentRequest) returns (ProcessPaymentResponse);
+  rpc CreatePaymentQuote (CreatePaymentQuoteRequest) returns (CreatePaymentQuoteResponse);
+  rpc ConfirmPayment (ConfirmPaymentRequest) returns (ProcessPaymentResponse);
   rpc GetPayment (GetPaymentRequest) returns (GetPaymentResponse);
   rpc GetPaymentHistory (GetPaymentHistoryRequest) returns (GetPaymentHistoryResponse);
 }
 
-message ProcessPaymentRequest {
+message CreatePaymentQuoteRequest {
   string client_id = 1;
-  string credit_card_id = 2;
-  string service_id = 3;
-  string currency = 4;
+  string service_id = 2;
+  string currency = 3;
+}
+message CreatePaymentQuoteResponse {
+  bool success = 1;
+  PaymentQuoteDto quote = 2;
+  string error_message = 3;
+}
+
+message ConfirmPaymentRequest {
+  string client_id = 1;
+  string quote_id = 2;
+  string credit_card_id = 3;
 }
 message ProcessPaymentResponse {
   bool success = 1;
@@ -118,6 +130,7 @@ message PaymentDto {
   string error_message = 8;
   string service_name = 9;
   repeated PaymentDetailDto details = 10;
+  string operator_provider = 11;
 }
 
 message PaymentDetailDto {
@@ -125,6 +138,18 @@ message PaymentDetailDto {
   string description = 2;
   double amount = 3;
   string currency = 4;
+}
+
+message PaymentQuoteDto {
+  string id = 1;
+  string status = 2;
+  string currency = 3;
+  double total_amount = 4;
+  string created_at = 5;
+  string expires_at = 6;
+  string service_id = 7;
+  string service_name = 8;
+  repeated PaymentDetailDto details = 9;
 }
 
 // ── Service Catalog ────────────────────────────────────────────────────────

@@ -22,16 +22,16 @@ var clientsApi = builder.AddProject<Projects.Clients_API>("clients", launchProfi
 	.WithReference(identity)
 	.WithEnvironment("AuthSettings__Authority", identity.GetEndpoint("https"));
 
-// Pagarte Worker
-var pagarteWorker = builder.AddProject<Projects.Pagarte_Worker>("pagarte-worker", launchProfileName: "Pagarte.Worker")
+// Pagarte Services
+var pagarteServices = builder.AddProject<Projects.Pagarte_Services>("pagarte-services", launchProfileName: "Pagarte.Services")
 	.WithReference(rabbitmq);
 
 // Pagarte API
 var pagarteApi = builder.AddProject<Projects.Pagarte_API>("pagarte-api")
 	.WithReference(identity)
-	.WithReference(pagarteWorker)
+	.WithReference(pagarteServices)
 	.WithEnvironment("AuthSettings__Authority", identity.GetEndpoint("https"))
-	.WithEnvironment("PagarteWorker__GrpcUrl", pagarteWorker.GetEndpoint("https"));
+	.WithEnvironment("PagarteServices__GrpcUrl", pagarteServices.GetEndpoint("https"));
 
 // Pagarte Engine
 builder.AddProject<Projects.Pagarte_Engine>("pagarte-engine")

@@ -13,17 +13,17 @@ namespace Pagarte.API
 
 			builder.Services.AddControllers();
 
-			// gRPC clients call Pagarte.Worker.
-			var workerUrl = configuration["PagarteWorker:GrpcUrl"];
+			// gRPC clients call Pagarte.Services.
+			var workerUrl = configuration["PagarteServices:GrpcUrl"];
 
 			if (string.IsNullOrWhiteSpace(workerUrl))
 			{
-				throw new InvalidOperationException("PagarteWorker:GrpcUrl is not configured.");
+				throw new InvalidOperationException("PagarteServices:GrpcUrl is not configured.");
 			}
 
 			var allowUntrustedWorkerCertificate =
 				builder.Environment.IsDevelopment()
-				&& configuration.GetValue<bool>("PagarteWorker:AllowUntrustedCertificate");
+				&& configuration.GetValue<bool>("PagarteServices:AllowUntrustedCertificate");
 
 			builder.Services.AddGrpcClient<CreditCardService.CreditCardServiceClient>(
 				o => o.Address = new Uri(workerUrl))

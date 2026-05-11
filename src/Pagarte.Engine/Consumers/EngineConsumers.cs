@@ -31,7 +31,7 @@ namespace Pagarte.Engine.Consumers
             _logger.LogInformation("Processing payment request {PaymentId}", message.PaymentId);
 
             await _paymentStatus.UpdateStatusAsync(
-                message.PaymentId, "SendingToCompany");
+                message.PaymentId, "SendingPaymentToCompany");
 
             // Get company details from payment info
             var info = await _paymentStatus.GetPaymentInfoAsync(message.PaymentId);
@@ -69,13 +69,17 @@ namespace Pagarte.Engine.Consumers
                     message.Reference, result.ErrorMessage);
 
                 await _paymentStatus.UpdateStatusAsync(
-                    message.PaymentId, "Refunding", errorMessage: result.ErrorMessage);
+                    message.PaymentId, "CompanyPaymentFailed", errorMessage: result.ErrorMessage);
+
+                await _paymentStatus.UpdateStatusAsync(
+                    message.PaymentId, "Refunding");
 
                 // Trigger refund
                 await _messagePublisher.PublishAsync(
                     new RefundRequestMessage
                     {
                         PaymentId = message.PaymentId,
+                        OperatorProvider = message.OperatorProvider,
                         OperatorPaymentId = message.OperatorPaymentId,
                         Amount = message.Amount,
                         Currency = message.Currency,
@@ -93,13 +97,13 @@ namespace Pagarte.Engine.Consumers
     /// </summary>
     public class RefundConsumer(
         RabbitMQConnectionFactory connectionFactory,
-        IPaymentOperatorAdapter paymentOperatorAdapter,
+        IPaymentOperatorAdapterFactory paymentOperatorAdapterFactory,
         IPaymentStatusRepository paymentStatus,
         IMessagePublisher messagePublisher,
         ILogger<RefundConsumer> logger)
         : BaseConsumer<RefundRequestMessage>(connectionFactory, logger)
     {
-        private readonly IPaymentOperatorAdapter _paymentOperatorAdapter = paymentOperatorAdapter;
+        private readonly IPaymentOperatorAdapterFactory _paymentOperatorAdapterFactory = paymentOperatorAdapterFactory;
         private readonly IPaymentStatusRepository _paymentStatus = paymentStatus;
         private readonly IMessagePublisher _messagePublisher = messagePublisher;
         private const int MaxRetries = 3;
@@ -112,7 +116,16 @@ namespace Pagarte.Engine.Consumers
             _logger.LogInformation("Processing refund for payment {PaymentId}, attempt {Retry}",
                 message.PaymentId, message.RetryCount + 1);
 
-            var result = await _paymentOperatorAdapter.RefundAsync(
+            if (string.IsNullOrWhiteSpace(message.OperatorProvider))
+            {
+                throw new InvalidOperationException(
+                    "Refund request does not contain an operator provider.");
+            }
+
+            var paymentOperatorAdapter = _paymentOperatorAdapterFactory.GetRequiredAdapter(
+                message.OperatorProvider);
+
+            var result = await paymentOperatorAdapter.RefundAsync(
                 message.OperatorPaymentId,
                 message.Amount,
                 message.Currency,
@@ -149,6 +162,7 @@ namespace Pagarte.Engine.Consumers
                     new RefundRequestMessage
                     {
                         PaymentId = message.PaymentId,
+                        OperatorProvider = message.OperatorProvider,
                         OperatorPaymentId = message.OperatorPaymentId,
                         Amount = message.Amount,
                         Currency = message.Currency,

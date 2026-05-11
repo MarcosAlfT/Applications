@@ -12,7 +12,7 @@ namespace Pagarte.Connections.PaymentOperators
         ILogger<DLocalPaymentOperatorAdapter> logger) : IPaymentOperatorAdapter
     {
         private readonly HttpClient _httpClient =
-            httpClientFactory.CreateClient("payment-operator");
+            CreateHttpClient(httpClientFactory);
         private readonly string _apiKey =
             configuration["PaymentOperator:ApiKey"]
             ?? throw new InvalidOperationException("PaymentOperator:ApiKey not configured.");
@@ -20,6 +20,7 @@ namespace Pagarte.Connections.PaymentOperators
             configuration["PaymentOperator:ApiSecret"]
             ?? throw new InvalidOperationException("PaymentOperator:ApiSecret not configured.");
         private readonly ILogger<DLocalPaymentOperatorAdapter> _logger = logger;
+        public string ProviderCode => "DLocal";
 
 		public async Task<PaymentOperatorCardResult> RegisterCardAsync(
 			string cardNumber, string cvv, string cardHolderName,
@@ -174,6 +175,17 @@ namespace Pagarte.Connections.PaymentOperators
                 Encoding.UTF8.GetBytes(_apiSecret));
             var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
             return Convert.ToHexString(hash).ToLower();
+        }
+
+        private static HttpClient CreateHttpClient(IHttpClientFactory httpClientFactory)
+        {
+            var httpClient = httpClientFactory.CreateClient("payment-operator");
+            if (httpClient.BaseAddress == null)
+            {
+                throw new InvalidOperationException("PaymentOperator:ApiUrl is not configured.");
+            }
+
+            return httpClient;
         }
     }
 }

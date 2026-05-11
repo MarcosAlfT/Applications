@@ -45,16 +45,32 @@ namespace Pagarte.API.Controllers
 			return Ok(ApiResponse<object>.CreateSuccess(result.Payment));
 		}
 
-		[HttpPost]
-		public async Task<IActionResult> ProcessAsync(
-			[FromBody] ProcessPaymentRequest request)
+		[HttpPost("quote")]
+		public async Task<IActionResult> CreateQuoteAsync(
+			[FromBody] CreatePaymentQuoteRequest request)
 		{
 			var validation = ValidateClientId();
 			if (validation != null) return validation;
 
-			var result = await _grpcClient.ProcessPaymentAsync(
-				GetClientId()!, request.CreditCardId,
-				request.ServiceId, request.Currency);
+			var result = await _grpcClient.CreatePaymentQuoteAsync(
+				GetClientId()!, request.ServiceId, request.Currency);
+
+			if (!result.Success)
+				return Ok(ApiResponse.CreateFailure(result.ErrorMessage));
+
+			return Ok(ApiResponse<object>.CreateSuccess(result.Quote,
+				"Payment quote created successfully."));
+		}
+
+		[HttpPost("confirm")]
+		public async Task<IActionResult> ConfirmAsync(
+			[FromBody] ConfirmPaymentRequest request)
+		{
+			var validation = ValidateClientId();
+			if (validation != null) return validation;
+
+			var result = await _grpcClient.ConfirmPaymentAsync(
+				GetClientId()!, request.QuoteId, request.CreditCardId);
 
 			if (!result.Success)
 				return Ok(ApiResponse.CreateFailure(result.ErrorMessage));
@@ -64,7 +80,7 @@ namespace Pagarte.API.Controllers
 				result.PaymentId,
 				result.Reference,
 				result.Status
-			}, "Payment initiated successfully."));
+			}, "Payment confirmed successfully."));
 		}
 	}
 }

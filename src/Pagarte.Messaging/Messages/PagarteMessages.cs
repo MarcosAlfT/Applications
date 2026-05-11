@@ -8,6 +8,7 @@ namespace Pagarte.Messaging.Messages
     {
         public Guid PaymentId { get; set; }
         public Guid CompanyId { get; set; }
+        public string OperatorProvider { get; set; } = string.Empty;
         public string OperatorPaymentId { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public string Currency { get; set; } = string.Empty;
@@ -23,6 +24,7 @@ namespace Pagarte.Messaging.Messages
     public class RefundRequestMessage
     {
         public Guid PaymentId { get; set; }
+        public string OperatorProvider { get; set; } = string.Empty;
         public string OperatorPaymentId { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public string Currency { get; set; } = string.Empty;

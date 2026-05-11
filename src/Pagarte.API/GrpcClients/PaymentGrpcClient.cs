@@ -6,15 +6,22 @@ namespace Pagarte.API.GrpcClients
 	{
 		private readonly PaymentService.PaymentServiceClient _client = client;
 
-		public async Task<ProcessPaymentResponse> ProcessPaymentAsync(
-			string clientId, string creditCardId,
-			string serviceId, string currency)
-			=> await _client.ProcessPaymentAsync(new ProcessPaymentRequest
+		public async Task<CreatePaymentQuoteResponse> CreatePaymentQuoteAsync(
+			string clientId, string serviceId, string currency)
+			=> await _client.CreatePaymentQuoteAsync(new CreatePaymentQuoteRequest
 			{
 				ClientId = clientId,
-				CreditCardId = creditCardId,
 				ServiceId = serviceId,
 				Currency = currency
+			});
+
+		public async Task<ProcessPaymentResponse> ConfirmPaymentAsync(
+			string clientId, string quoteId, string creditCardId)
+			=> await _client.ConfirmPaymentAsync(new ConfirmPaymentRequest
+			{
+				ClientId = clientId,
+				QuoteId = quoteId,
+				CreditCardId = creditCardId
 			});
 
 		public async Task<GetPaymentResponse> GetPaymentAsync(

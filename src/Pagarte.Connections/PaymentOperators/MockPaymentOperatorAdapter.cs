@@ -6,6 +6,7 @@ namespace Pagarte.Connections.PaymentOperators
     public partial class MockPaymentOperatorAdapter(ILogger<MockPaymentOperatorAdapter> logger) : IPaymentOperatorAdapter
     {
         private readonly ILogger<MockPaymentOperatorAdapter> _logger = logger;
+        public string ProviderCode => "Mock";
 
 		public Task<PaymentOperatorCardResult> RegisterCardAsync(
 			string cardNumber, string cvv, string cardHolderName,

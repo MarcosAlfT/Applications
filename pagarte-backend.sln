@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.6.11723.189
@@ -22,7 +22,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Responses", "src\Responses\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pagarte.API", "src\Pagarte.API\Pagarte.API.csproj", "{ADCA2165-CC0D-3092-DCA1-74F3BB0C8E5F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pagarte.Worker", "src\Pagarte.Worker\Pagarte.Worker.csproj", "{FE47676A-8801-485B-A3C6-5626F300AB4C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pagarte.Services", "src\Pagarte.Services\Pagarte.Services.csproj", "{FE47676A-8801-485B-A3C6-5626F300AB4C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pagarte.Engine", "src\Pagarte.Engine\Pagarte.Engine.csproj", "{FC86C67D-99F7-F750-1AFE-4E3C3AB12506}"
 EndProject

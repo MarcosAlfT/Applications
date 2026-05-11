@@ -6,7 +6,7 @@ namespace Pagarte.Engine.Services
 {
     /// <summary>
     /// Updates payment status in PagarteDb via raw SQL.
-    /// Engine does not reference Pagarte.Worker — no circular dependency.
+    /// Engine does not reference Pagarte.Services — no circular dependency.
     /// Only updates, never reads complex object graphs.
     /// </summary>
     public class PaymentStatusRepository(IConfiguration configuration) : IPaymentStatusRepository
@@ -21,6 +21,8 @@ namespace Pagarte.Engine.Services
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
+            var statusValue = GetStatusValue(status);
+
             var sql = @"
                 UPDATE Payments
                 SET Status = @Status,
@@ -28,12 +30,13 @@ namespace Pagarte.Engine.Services
                     ErrorMessage = COALESCE(@ErrorMessage, ErrorMessage),
                     LastUpdatedAt = @UpdatedAt,
                     ProcessedAt = CASE
-                        WHEN @Status IN ('Completed','Failed','Refunded','RefundFailed')
+                        WHEN @StatusName IN ('Completed','CompanyPaymentFailed','Failed','Refunded','RefundFailed')
                         THEN @UpdatedAt ELSE ProcessedAt END
                 WHERE Id = @PaymentId";
 
             using var cmd = new SqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@Status", status);
+            cmd.Parameters.AddWithValue("@Status", statusValue);
+            cmd.Parameters.AddWithValue("@StatusName", status);
             cmd.Parameters.AddWithValue("@CompanyReference",
                 (object?)companyReference ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ErrorMessage",
@@ -43,6 +46,22 @@ namespace Pagarte.Engine.Services
 
             await cmd.ExecuteNonQueryAsync();
         }
+
+        private static int GetStatusValue(string status)
+            => status switch
+            {
+                "Confirmed" => 0,
+                "ChargingCard" => 1,
+                "CardCharged" => 2,
+                "SendingPaymentToCompany" => 3,
+                "Completed" => 4,
+                "Failed" => 5,
+                "Refunding" => 6,
+                "Refunded" => 7,
+                "RefundFailed" => 8,
+                "CompanyPaymentFailed" => 9,
+                _ => throw new InvalidOperationException($"Unknown payment status '{status}'.")
+            };
 
         public async Task IncrementRetryAsync(Guid paymentId)
         {
