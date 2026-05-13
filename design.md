@@ -1,8 +1,8 @@
 # Pagarte Backend Design
 
-## Runtime Shape
+Pagarte is split into a public API, an internal services project, and an async engine. AppHost is only local development orchestration; production should run each service independently.
 
-Pagarte is split into a public API, an internal services project, and an async engine.
+## Runtime Shape
 
 ```text
 Pagarte.API  ---- gRPC ---->  Pagarte.Services  ---- SQL Server: PagarteDb
