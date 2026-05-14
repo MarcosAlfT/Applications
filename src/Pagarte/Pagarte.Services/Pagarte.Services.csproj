@@ -14,8 +14,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.7" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RabbitMQ\RabbitMQ.csproj" />
-    <ProjectReference Include="..\Responses\Responses.csproj" />
+    <ProjectReference Include="..\..\RabbitMQ\RabbitMQ.csproj" />
+    <ProjectReference Include="..\..\Responses\Responses.csproj" />
     <ProjectReference Include="..\Pagarte.Connections\Pagarte.Connections.csproj" />
     <ProjectReference Include="..\Pagarte.Contracts\Pagarte.Contracts.csproj" />
     <ProjectReference Include="..\Pagarte.Messaging\Pagarte.Messaging.csproj" />
