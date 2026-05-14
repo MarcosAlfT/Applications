@@ -1,23 +1,383 @@
 # Pagarte Backend Design
 
-Pagarte is split into a public API, an internal services project, and an async engine. AppHost is only local development orchestration; production should run each service independently.
+Pagarte is split into client identity, client profile management, a public payment API, an internal services project, and an async engine. AppHost is only local development orchestration; production should run each service independently.
 
 ## Runtime Shape
 
 ```text
-Pagarte.API  ---- gRPC ---->  Pagarte.Services  ---- SQL Server: PagarteDb
-                                      |
-                                      | publishes payment messages
-                                      v
-                                 RabbitMQ
-                                      |
-                                      v
-                              Pagarte.Engine
+ClientIdentityService  ---- issues OpenIddict access tokens ----+
+                                                                 |
+Clients.API       <---- validates issuer/audience ---------------+
+Pagarte.API       <---- validates issuer/audience ---------------+
+     |
+     | gRPC
+     v
+Pagarte.Services  ---- SQL Server: PagarteDb
+     |
+     | publishes payment messages
+     v
+RabbitMQ
+     |
+     v
+Pagarte.Engine
 ```
 
 `AppHost` is local development orchestration only. Production should run each service independently and should provide production infrastructure such as RabbitMQ, SQL Server, logs, metrics, and secrets outside Aspire.
 
+## General Architecture
+
+Backend projects should follow the Application Use Case Pattern. Controllers and endpoints are thin HTTP adapters. Business workflows live in focused Application use cases. Domain entities own business rules and state transitions. Infrastructure and Persistence implement technical details behind Application interfaces.
+
+Identity, Clients, and Pagarte are separate bounded contexts:
+
+- `ClientIdentityService` owns client-user authentication and token issuance.
+- `Clients.API` owns client profile data.
+- `Pagarte.API` is the public payment HTTP boundary.
+- `Pagarte.Services` owns payment persistence and synchronous card/payment operations.
+- `Pagarte.Engine` owns asynchronous post-charge orchestration.
+
 ## Projects
+
+### `ClientIdentityService`
+
+`ClientIdentityService` is the refactored client-user identity API. The old `IdentityService` should move to this name and structure:
+
+```text
+ClientIdentityService
+  ClientIdentity.Api
+  ClientIdentity.Application
+  ClientIdentity.Domain
+  ClientIdentity.Infrastructure
+  ClientIdentity.Persistence
+```
+
+Layer responsibilities:
+
+- `ClientIdentity.Api`: controllers/endpoints only. It receives HTTP input, validates basic request shape, calls Application use cases, returns HTTP responses, and exposes the OpenAPI JSON document when the API runs.
+- `ClientIdentity.Application`: use cases, DTOs, interfaces, authentication flow orchestration, password validation rules, and policy access through `IPolicyProvider`.
+- `ClientIdentity.Domain`: entities, domain rules, aggregate behavior, and static factory methods.
+- `ClientIdentity.Infrastructure`: `ConfigurationPolicyProvider`, `ConsoleNotificationPublisher`, password hashing, token helpers, OpenIddict-backed token services, and external technical services.
+- `ClientIdentity.Persistence`: EF Core `ClientIdentityDbContext`, entity configurations, repositories, migrations, soft-delete query filters, and unit of work.
+
+The Application layer must not depend directly on EF Core or ASP.NET `HttpContext`. It should define interfaces such as:
+
+```text
+IUserRepository
+IRefreshTokenRepository
+IEmailConfirmationTokenRepository
+IPasswordResetTokenRepository
+IPolicyProvider
+IPasswordHasher
+ITokenService
+ITokenHasher
+INotificationPublisher
+IUnitOfWork
+IClock
+ICurrentActorProvider
+```
+
+`ICurrentActorProvider` exists to populate audit fields such as `CreatedBy`, `UpdatedBy`, `DeletedBy`, and `RevokedBy` without coupling Application or Domain code to ASP.NET. It can return values such as `system`, an authenticated user id, or another request actor.
+
+#### Identity Scope
+
+This project is for client identity only.
+
+Do not implement:
+
+- Roles or permissions.
+- Internal users, admin users, or support users.
+- RabbitMQ.
+- Real email sending.
+- Google, Microsoft, or other external login providers.
+- Policy database tables.
+- Policy APIs.
+- Message-code/message-provider infrastructure.
+
+Hardcoded user-facing messages are acceptable for the first version.
+
+#### Identity Entities
+
+All persistent identity entities use GUID ids and include:
+
+```text
+CreatedAt
+CreatedBy
+UpdatedAt
+UpdatedBy
+DeletedAt
+DeletedBy
+```
+
+Soft delete is required across the identity project. Records should not be physically deleted unless explicitly requested.
+
+`User` is the aggregate root. Recommended fields:
+
+```text
+Id
+Email
+NormalizedEmail
+PasswordHash
+Status
+EmailConfirmedAt
+LastLoginAt
+FailedLoginAttempts
+LastFailedLoginAt
+LockoutEndAt
+SecurityStamp
+ConcurrencyStamp
+CreatedAt
+CreatedBy
+UpdatedAt
+UpdatedBy
+DeletedAt
+DeletedBy
+```
+
+User statuses:
+
+```text
+PendingEmailConfirmation
+Active
+Locked
+Suspended
+Deleted
+```
+
+New users must be created through `User.Create`. New users start as `PendingEmailConfirmation`, with no email confirmation date, zero failed login attempts, new security and concurrency stamps, and no deletion data. New users do not receive access or refresh tokens.
+
+Deleted users cannot login or refresh tokens. Suspended users cannot login. Locked users cannot login until lockout expires and the account is made eligible again.
+
+#### Identity Tokens
+
+Use OpenIddict as the token authority. Keep `ITokenService` as the Application abstraction, and implement it in Infrastructure using OpenIddict/token helper code. This preserves clean architecture while keeping token issuance and validation on a proven OAuth/OpenID Connect library.
+
+Keep audience-based API authorization. Identity issues access tokens for configured audiences such as:
+
+```text
+clients-api
+pagarte-api
+```
+
+Each resource API validates the Identity issuer and only its own configured audience.
+
+Refresh tokens use rotation. Store only refresh token hashes, never raw refresh tokens. A refresh token is active only when:
+
+```text
+RevokedAt is null
+DeletedAt is null
+ExpiresAt is in the future
+```
+
+Recommended refresh token fields:
+
+```text
+Id
+UserId
+TokenHash
+ExpiresAt
+RevokedAt
+RevokedBy
+ReplacedByTokenId
+DeviceId
+DeviceName
+UserAgent
+CreatedByIp
+RevokedByIp
+CreatedAt
+CreatedBy
+UpdatedAt
+UpdatedBy
+DeletedAt
+DeletedBy
+```
+
+Email confirmation and password reset tokens also store only token hashes. Do not expose `UserId` in confirmation or reset URLs.
+
+URL formats:
+
+```text
+https://your-client-app.com/confirm-email?token=<raw-token>
+https://your-client-app.com/reset-password?token=<raw-token>
+```
+
+Token `IsActive` values are calculated, not stored. A confirmation or reset token is active only when:
+
+```text
+UsedAt is null
+RevokedAt is null
+DeletedAt is null
+ExpiresAt is in the future
+```
+
+After a successful password reset:
+
+1. Update `PasswordHash`.
+2. Update `SecurityStamp`.
+3. Mark the reset token as used.
+4. Revoke all active refresh tokens.
+
+Update `SecurityStamp` after sensitive account changes:
+
+- Password changed.
+- Password reset.
+- Email changed.
+- Account suspended.
+- Account deleted.
+- Logout all devices.
+
+#### Identity Policies
+
+Policies are configuration-based for now. Do not create policy database tables or policy APIs.
+
+Policy access flow:
+
+```text
+ClientIdentity.Application
+  -> IPolicyProvider
+  -> ClientIdentity.Infrastructure
+  -> ConfigurationPolicyProvider
+  -> appsettings.json
+```
+
+Policy groups:
+
+```text
+PasswordPolicy
+TokenPolicy
+LockoutPolicy
+EmailConfirmationPolicy
+PasswordResetPolicy
+PasskeyPolicy
+```
+
+Recommended values:
+
+```text
+PasswordPolicy:
+  MinimumLength = 10
+  MaximumLength = 128
+  RequireUppercase = true
+  RequireLowercase = true
+  RequireNumber = true
+  RequireSymbol = true
+  RejectEmailAsPassword = true
+  RejectCommonPasswords = true
+
+TokenPolicy:
+  AccessTokenMinutes = 15
+  RefreshTokenDays = 14
+  RefreshTokenRotationEnabled = true
+
+LockoutPolicy:
+  MaxFailedLoginAttempts = 5
+  LockoutMinutes = 15
+  FailedAttemptWindowMinutes = 30
+
+EmailConfirmationPolicy:
+  TokenExpirationHours = 24
+  MaxResendAttemptsPerHour = 3
+
+PasswordResetPolicy:
+  TokenExpirationMinutes = 30
+  MaxResetRequestsPerHour = 3
+
+PasskeyPolicy:
+  MaxPasskeysPerUser = 10
+  RequirePasswordBeforeAddingPasskey = true
+  ChallengeExpirationMinutes = 5
+```
+
+Password validation should use a builder pattern to build the password policy and rule/strategy classes to validate it. Return all relevant password validation errors when possible.
+
+Possible password rules:
+
+```text
+MinimumLengthRule
+MaximumLengthRule
+UppercaseRule
+LowercaseRule
+NumberRule
+SymbolRule
+NotSameAsEmailRule
+CommonPasswordRule
+```
+
+#### Identity Use Cases
+
+Use focused use cases instead of one large authentication service.
+
+First version use cases:
+
+```text
+RegisterUser
+ConfirmEmail
+LoginWithPassword
+RefreshToken
+Logout
+ForgotPassword
+ResetPassword
+ChangePassword
+```
+
+Later use cases:
+
+```text
+RegisterPasskey
+LoginWithPasskey
+RemovePasskey
+LogoutAllDevices
+ResendEmailConfirmation
+```
+
+Password login should use a simple explicit flow, not a generic pipeline framework. Preferred shape:
+
+```csharp
+public sealed class LoginWithPasswordUseCase
+{
+    public async Task<LoginResponse> ExecuteAsync(LoginWithPasswordRequest request)
+    {
+        var user = await FindUserAsync(request.Email);
+        await ValidatePasswordAsync(user, request.Password);
+        await ValidateAccountStatusAsync(user);
+        await TrackSuccessfulLoginAsync(user);
+        var tokens = await IssueTokensAsync(user);
+        await AuditLoginAsync(user);
+
+        return tokens;
+    }
+}
+```
+
+Notification is abstracted through `INotificationPublisher`. The first implementation is `ConsoleNotificationPublisher`, which writes generated email confirmation and password reset URLs to the console. This keeps the use cases ready for RabbitMQ or real email delivery later without adding those features now.
+
+#### Passkeys
+
+Passkeys/WebAuthn/FIDO2 are later scope. Do not store biometric data. Never store fingerprint, face, or phone biometric information.
+
+`UserPasskey` is a child entity of `User` and should be managed through:
+
+```text
+User.AddPasskey(...)
+User.RemovePasskey(...)
+```
+
+Recommended fields:
+
+```text
+Id
+UserId
+CredentialId
+PublicKey
+DeviceName
+SignCount
+LastUsedAt
+CreatedAt
+CreatedBy
+UpdatedAt
+UpdatedBy
+DeletedAt
+DeletedBy
+```
 
 ### `Pagarte.API`
 
@@ -311,7 +671,7 @@ Both `Pagarte.Services` and `Pagarte.Engine` declare the Pagarte topology on sta
 
 AppHost wires local services:
 
-- Identity
+- ClientIdentityService
 - Clients API
 - Pagarte API
 - Pagarte Services

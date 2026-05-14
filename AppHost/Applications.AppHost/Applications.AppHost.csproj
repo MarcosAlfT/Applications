@@ -22,7 +22,7 @@
     <ProjectReference Include="..\..\src\Pagarte.Engine\Pagarte.Engine.csproj" />
     <ProjectReference Include="..\..\src\Pagarte.Services\Pagarte.Services.csproj" />
     <ProjectReference Include="..\..\src\Clients\Clients.API.csproj" />
-    <ProjectReference Include="..\..\src\IdentityService\IdentityService.csproj" />
+    <ProjectReference Include="..\..\src\ClientIdentityService\ClientIdentity.Api\ClientIdentity.Api.csproj" />
   </ItemGroup>
 
 </Project>
